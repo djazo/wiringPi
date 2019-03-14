@@ -24,3 +24,8 @@ is by sending an email to projects@drogon.net
 Thanks!
 
   -Gordon
+
+For CMake build system bugs and stuff, pull requests and bug reports are welcome.
+
+  -Arto
+  
