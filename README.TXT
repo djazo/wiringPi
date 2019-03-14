@@ -28,4 +28,3 @@ Thanks!
 For CMake build system bugs and stuff, pull requests and bug reports are welcome.
 
   -Arto
-  
