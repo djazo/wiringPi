@@ -1,10 +1,5 @@
 # wiringPi library
 
-find_library(LIBM m REQUIRED)
-find_library(LIBPTHREAD pthread REQUIRED)
-find_library(LIBRT rt REQUIRED)
-find_library(LIBCRYPT crypt REQUIRED)
-
 set(SRC
   bmp180.c
   drcSerial.c
@@ -82,7 +77,7 @@ set(HEADERS
 add_library(wiringPi_obj OBJECT ${SRC})
 target_include_directories(wiringPi_obj PUBLIC .)
 
-add_library(wiringPi $<TARGET_OBJECTS:wiringPi_obj)
+add_library(wiringPi $<TARGET_OBJECTS:wiringPi_obj>)
 target_link_libraries(wiringPi ${LIBM} ${LIBPTHREAD} ${LIBRT} ${LIBCRYPT})
 set_target_properties(wiringPi PROPERTIES VERSION ${WIRINGPI_VERSION})
 install(TARGETS wiringPi
