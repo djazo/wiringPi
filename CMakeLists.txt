@@ -11,8 +11,8 @@ find_library(LIBPTHREAD pthread REQUIRED)
 find_library(LIBRT rt REQUIRED)
 find_library(LIBCRYPT crypt REQUIRED)
 
-add_directory(wiringPi)
-add_directory(wiringPiD)
-add_directory(devLib)
-add_directory(gpio)
+add_subdirectory(wiringPi)
+add_subdirectory(wiringPiD)
+add_subdirectory(devLib)
+add_subdirectory(gpio)
 

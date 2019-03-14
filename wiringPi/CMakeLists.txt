@@ -76,7 +76,7 @@ set(HEADERS
 
 add_library(wiringPi_obj OBJECT ${SRC})
 target_include_directories(wiringPi_obj PUBLIC .)
-
+set_property(TARGET wiringPi_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_library(wiringPi $<TARGET_OBJECTS:wiringPi_obj>)
 target_link_libraries(wiringPi ${LIBM} ${LIBPTHREAD} ${LIBRT} ${LIBCRYPT})
 set_target_properties(wiringPi PROPERTIES VERSION ${WIRINGPI_VERSION})
