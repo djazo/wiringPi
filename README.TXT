@@ -27,5 +27,7 @@ Thanks!
 
 For CMake build system bugs and stuff, pull requests and bug reports are welcome.
 
+Also board detection bugs (as this should be compatible with all OS, not just raspbian) welcome to me. We are using /sys rather than /proc. This allows to use 64bit ARM kernel.
+
   -Arto
   
