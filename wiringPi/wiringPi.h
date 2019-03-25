@@ -118,7 +118,6 @@ extern const char *piRevisionNames [16] ;
 extern const char *piMakerNames    [16] ;
 extern const int   piMemorySize    [ 8] ;
 
-
 //	Intended for the GPIO program Use at your own risk.
 
 // Threads
@@ -187,6 +186,8 @@ extern "C" {
 
 // Internal
 
+#include <stdint.h>
+
 extern int wiringPiFailure (int fatal, const char *message, ...) ;
 
 // Core wiringPi functions
@@ -221,6 +222,7 @@ extern int  wiringPiSetupPiFaceForGpioProg (void) ;	// Don't use this - for gpio
 
 extern          int  piGpioLayout        (void) ;
 extern          int  piBoardRev          (void) ;	// Deprecated
+  extern uint32_t readRevision(void) ;
 extern          void piBoardId           (int *model, int *rev, int *mem, int *maker, int *overVolted) ;
 extern          int  wpiPinToGpio        (int wpiPin) ;
 extern          int  physPinToGpio       (int physPin) ;

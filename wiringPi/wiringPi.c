@@ -70,6 +70,7 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <asm/ioctl.h>
+#include <endian.h>
 
 #include "softPwm.h"
 #include "softTone.h"
@@ -738,39 +739,14 @@ int piGpioLayout (void)
 {
   FILE *sysFd ;
   static int  gpioLayout = -1 ;
-  uint32_t revData;
-  uint16_t revRead;
-  long fSize;
+  uint32_t revision;
 
   if (gpioLayout != -1)	// No point checking twice
     return gpioLayout ;
 
-  if ((sysFd = fopen ("/sys/firmware/devicetree/base/system/linux,revision", "rb")) == NULL)
-    piGpioLayoutOops ("Unable to open /sys/firmware/devicetree/base/system/linux,revision") ;
+  revision = readRevision();
 
-  // getting the filesize
-
-  fseek(sysFd,0,SEEK_END);
-  fSize = ftell(sysFd);
-  rewind(sysFd);
-
-  // read what we have
-
-  if(fSize < 4 ) {
-    fread(revRead,2,1,sysFd);
-    revData = be16toh(revRead[0]);
-  } else {
-    fread(revRead,4,1,sysFd);
-    revData = be16toh(revread[0]);
-    revData = (revData << 16) + be16toh(revRead[1]);
-  }
-
-  if(wiringPiDebug)
-    printf("revData: %x\n",revData);
-
-  fclose (sysFd) ;
-
-  if ( revData < 4)
+  if (revision < 0x0004)
     gpioLayout = 1 ;
   else
     gpioLayout = 2 ;	// Covers everything else from the B revision 2 to the B+, the Pi v2, v3, zero and CM's.
@@ -861,37 +837,29 @@ int piBoardRev (void)
  *********************************************************************************
  */
 
-uint32_t readRevision()
+uint32_t readRevision(void)
 {
   FILE *sysFd;
-  char readData[4];
   uint32_t revData;
 
-  if((sysFd = fopen("/sys/firmware/devicetree/base/system/linux,revision")) == NULL )
+  if((sysFd = fopen("/sys/firmware/devicetree/base/system/linux,revision","rb")) == NULL )
     printf("Unable to open linux,revision");
-  fread(readData,4,1,sysFd);
+  fread(&revData,sizeof(revData),1,sysFd);
+  fclose(sysFd);
 
-  // test the ordering of the bytes in the revision string
-  // if the first byte is non-zero, we have new rev scheme and
-  // bytes swapped
-  if(readData[0] > 0) {
-    revData = readData[1];
-    revData = (revData << 8) + readData[0];
-    revData = (revData << 8) + readData[3];
-    revData = (revData << 8) + readData[2];
+  if((revData & 0xffff) == 0) {
+    revData = revData >> 16;
   } else {
-    revData = readData[0];
+    revData = be32toh(revData);
   }
+
   return revData;
 }
 
 void piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
 {
-  FILE *cpuFd ;
-  char line [120] ;
-  char *c ;
   uint32_t revision ;
-  int bRev, bType, bProc, bMfg, bMem, bWarranty ;
+  int bRev, bType, bProc, bMfg, bMem, bWarranty;
 
 //	Will deal with the properly later on - for now, lets just get it going...
 //  unsigned int modelNum ;
@@ -900,14 +868,14 @@ void piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
 
 // Check for new way:
 
-  if ((revision &  (1 << 23)) != 0)	// New way
+  if ((revision & (1 << 23)) != 0)	// New way
   {
     if (wiringPiDebug)
       printf ("piBoardId: New Way: revision is: %08X\n", revision) ;
 
     bRev      = (revision & (0x0F <<  0)) >>  0 ;
     bType     = (revision & (0xFF <<  4)) >>  4 ;
-    bProc     = (revision & (0x0F << 12)) >> 12 ;	// Not used for now.
+    bProc     = (revision & (0x0F << 12)) >> 12 ;
     bMfg      = (revision & (0x0F << 16)) >> 16 ;
     bMem      = (revision & (0x07 << 20)) >> 20 ;
     bWarranty = (revision & (0x03 << 24)) != 0 ;
@@ -921,11 +889,12 @@ void piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
     if (wiringPiDebug)
       printf ("piBoardId: rev: %d, type: %d, proc: %d, mfg: %d, mem: %d, warranty: %d\n",
 		bRev, bType, bProc, bMfg, bMem, bWarranty) ;
+
   }
   else					// Old way
   {
     if (wiringPiDebug)
-      printf ("piBoardId: Old Way: revision is: %s\n", c) ;
+      printf ("piBoardId: Old Way: revision is: %x\n", revision) ;
 
     /**/ if (revision == 0x02) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1   ; *mem = 0 ; *maker = PI_MAKER_EGOMAN  ; }
     else if (revision == 0x03) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_1 ; *mem = 0 ; *maker = PI_MAKER_EGOMAN  ; }
@@ -959,6 +928,7 @@ void piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
 
     else                              { *model = 0           ; *rev = 0              ; *mem =   0 ; *maker = 0 ;               }
   }
+
 }
 
 
@@ -2123,14 +2093,14 @@ int wiringPiSetup (void)
 //	and if we're running on a compute module, then wiringPi pin numbers
 //	don't really many anything, so force native BCM mode anyway.
 
-  piBoardId (&model, &rev, &mem, &maker, &overVolted) ;
+ piBoardId (&model, &rev, &mem, &maker, &overVolted) ;
 
   if ((model == PI_MODEL_CM) || (model == PI_MODEL_CM3) || (model == PI_MODEL_CM3P))
     wiringPiMode = WPI_MODE_GPIO ;
   else
     wiringPiMode = WPI_MODE_PINS ;
 
-  /**/ if (piGpioLayout () == 1)	// A, B, Rev 1, 1.1
+  /**/ if (piGpioLayout() == 1)	// A, B, Rev 1, 1.1
   {
      pinToGpio =  pinToGpioR1 ;
     physToGpio = physToGpioR1 ;
@@ -2197,7 +2167,7 @@ int wiringPiSetup (void)
   pwm = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_PWM) ;
   if (pwm == MAP_FAILED)
     return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: mmap (PWM) failed: %s\n", strerror (errno)) ;
- 
+
 //	Clock control (needed for PWM)
 
   clk = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_CLOCK_BASE) ;
