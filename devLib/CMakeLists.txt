@@ -36,3 +36,7 @@ set_target_properties(wiringPiDev PROPERTIES VERSION ${WIRINGPI_VERSION})
 install(TARGETS wiringPiDev
   DESTINATION lib/
   )
+
+install(FILES ${HEADERS}
+  DESTINATION include/wiringpi/
+  )
